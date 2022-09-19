@@ -123,11 +123,31 @@ def compute_resolvents(J, varname):
                 new_clause = []
                 for var in clause1.args:
                   if (isinstance(var, Variable) and var.name != varname) or (isinstance(var, Not) and var.operand.name != varname):
-                    new_clause.append(var)
+                    if var not in new_clause:
+                      new_clause.append(var)
                 for var in clause2.args:
                   if (isinstance(var, Variable) and var.name != varname) or (isinstance(var, Not) and var.operand.name != varname):
-                    new_clause.append(var)
-                resolvents.append(Or(new_clause))
+                    if var not in new_clause:
+                      new_clause.append(var)
+                new_clause = Or(list(set(new_clause)))
+                resolvents.append(new_clause)
+          elif isinstance(var1, Not) and var1.operand.name == varname:
+            for var2 in clause2.args:
+              if isinstance(var2, Variable) and var2.name == varname:
+                # remove all instances of var1 and var2 from clause1 and clause2
+                # and create a new clause by combining the remaining variables
+                # from both clauses
+                new_clause = []
+                for var in clause1.args:
+                  if (isinstance(var, Variable) and var.name != varname) or (isinstance(var, Not) and var.operand.name != varname):
+                    if var not in new_clause:
+                      new_clause.append(var)
+                for var in clause2.args:
+                  if (isinstance(var, Variable) and var.name != varname) or (isinstance(var, Not) and var.operand.name != varname):
+                    if var not in new_clause:
+                      new_clause.append(var)
+                resolvents.append(Or(list(set(new_clause))))
+
     return resolvents
 
 def get_next_S(Sprime, J, U):
@@ -154,20 +174,19 @@ def resolution_proof(S0):
     n = len(variables)
     for i in range(n):
       # Remove tautologies
-      print("Current variable: %s" % variables[i])
-      print("S[%d] = %s" % (i, S[i]))
       Sprime[i] = remove_tautologies(S[i])
-      # print("S'[%d] = %s" % (i, Sprime[i]))
+      print("S'[%d] = %s" % (i, Sprime[i]))
       J[i] = include_var_in_clause(Sprime[i], variables[i])
-      # print("J[%d] = %s" % (i, J[i]))
+      print("J[%d] = %s" % (i, J[i]))
       # compute resolvents
       U[i] = compute_resolvents(J[i], variables[i])
-      # print("U[%d] = %s" % (i, U[i]))
+      print("U[%d] = %s" % (i, U[i]))
       if (i+1) < n:
         S[i+1] = get_next_S(Sprime[i], J[i], U[i])
         # print("S[%d] = %s" % (i+1, S[i+1]))
       else:
         S[i + 1] = S[i]
+      print("Current variable: %s" % variables[i])
     return S[n-1]
 
 
@@ -179,9 +198,67 @@ def de_and(Sentence):
 
 
 
-# Example 1: (¬a ∨ ¬b) ∧ (a ∨ c) ∧ (b ∨ c) ∧ (a ∨ ¬b ∨ ¬d) ∧ (b ∨ d) ∧ (b ∨ ¬c ∨ ¬d)
+# (¬a ∨ ¬b) ∧ (a ∨ c) ∧ (b ∨ c) ∧ (a ∨ ¬b ∨ ¬d) ∧ (b ∨ d) ∧ (b ∨ ¬c ∨ ¬d)
 
-# d1 = Or([Not(Variable('a')), Not(Variable('b')), Variable('a')])
+# Q1
+d1 = Or([Not(Variable('a')), Not(Variable('b'))])
+
+d2 = Or([Variable('a'), Variable('c')])
+
+d3 = Or([Variable('b'), Variable('c')])
+
+d4 = Or([Variable('a'), Not(Variable('b')), Not(Variable('d'))])
+
+d5 = Or([Variable('b'), Variable('d')])
+
+d6 = Or([Variable('b'), Not(Variable('c')), Not(Variable('d'))])
+c1 = And([d1, d2, d3, d4, d5, d6])
+
+# (¬a ∨ ¬b ∨ c) ∧ (a ∨ b ∨ c) ∧ (¬c ∨ d) ∧ (¬c ∨ ¬d) ∧ (¬a ∨ c ∨ d) ∧ (¬a ∨ b ∨ ¬d) ∧ (b ∨ c ∨ ¬d) ∧ (a ∨ b ∨ d)
+
+# Example from the book
+
+# d1 = Or([Not(Variable('a')), Not(Variable('b')), Variable('c')])
+
+# d2 = Or([Variable('a'), Variable('b'), Variable('c')])
+
+# d3 = Or([Not(Variable('c')), Variable('d')])
+
+# d4 = Or([Not(Variable('c')), Not(Variable('d'))])
+
+# d5 = Or([Not(Variable('a')), Variable('c'), Variable('d')])
+
+# d6 = Or([Not(Variable('a')), Variable('b'), Not(Variable('d'))])
+
+# d7 = Or([Variable('b'), Variable('c'), Not(Variable('d'))])
+
+# d8 = Or([Variable('a'), Variable('b'), Variable('d')])
+
+# c1 = And([d1, d2, d3, d4, d5, d6, d7, d8])
+
+# (¬a ∨ ¬b ∨ c) ∧ (a ∨ ¬b ∨ c) ∧ (¬c ∨ d) ∧ (¬c ∨ ¬d) ∧(¬a ∨ c ∨ d) ∧ (¬a ∨ b ∨ ¬d) ∧ (b ∨ c ∨ ¬d) ∧ (a ∨ b ∨ d)
+
+# d1 = Or([Not(Variable('a')), Not(Variable('b')), Variable('c')])
+
+# d2 = Or([Variable('a'), Not(Variable('b')), Variable('c')])
+
+# d3 = Or([Not(Variable('c')), Variable('d')])
+
+# d4 = Or([Not(Variable('c')), Not(Variable('d'))])
+
+# d5 = Or([Not(Variable('a')), Variable('c'), Variable('d')])
+
+# d6 = Or([Not(Variable('a')), Variable('b'), Not(Variable('d'))])
+
+# d7 = Or([Variable('b'), Variable('c'), Not(Variable('d'))])
+
+# d8 = Or([Variable('a'), Variable('b'), Variable('d')])
+
+# c1 = And([d1, d2, d3, d4, d5, d6, d7, d8])
+
+# (¬a∨¬b) ∧ (a∨c) ∧ (b∨c) ∧ (a∨¬b∨¬d) ∧ (b∨d) ∧(b∨¬c∨¬d) ∧(¬b∨¬c∨d) 
+
+# d1 = Or([Not(Variable('a')), Not(Variable('b'))])
 
 # d2 = Or([Variable('a'), Variable('c')])
 
@@ -193,35 +270,14 @@ def de_and(Sentence):
 
 # d6 = Or([Variable('b'), Not(Variable('c')), Not(Variable('d'))])
 
-# c1 = And([d1, d2, d3, d4, d5, d6])
+# d7 = Or([Not(Variable('b')), Not(Variable('c')), Variable('d')])
 
-# S = de_and(c1)
-
-# Example 2: (¬a ∨ ¬b ∨ c) ∧ (a ∨ b ∨ c) ∧ (¬c ∨ d) ∧ (¬c ∨ ¬d) ∧ (¬a ∨ c ∨ d) ∧ (¬a ∨ b ∨ ¬d) ∧ (b ∨ c ∨ ¬d) ∧ (a ∨ b ∨ d)
-
-# Example from the book
-
-d1 = Or([Not(Variable('a')), Not(Variable('b')), Variable('c')])
-
-d2 = Or([Variable('a'), Variable('b'), Variable('c')])
-
-d3 = Or([Not(Variable('c')), Variable('d')])
-
-d4 = Or([Not(Variable('c')), Not(Variable('d'))])
-
-d5 = Or([Not(Variable('a')), Variable('c'), Variable('d')])
-
-d6 = Or([Not(Variable('a')), Variable('b'), Not(Variable('d'))])
-
-d7 = Or([Variable('b'), Variable('c'), Not(Variable('d'))])
-
-d8 = Or([Variable('a'), Variable('b'), Variable('d')])
-
-c1 = And([d1, d2, d3, d4, d5, d6, d7, d8])
+# c1 = And([d1, d2, d3, d4, d5, d6, d7])
 
 S = de_and(c1)
 
 print("CNF: ", c1)
 print("Original Set of Clauses: ", (S))
+
 print(resolution_proof(S))
-        
+
